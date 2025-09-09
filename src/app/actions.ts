@@ -19,12 +19,14 @@ export async function submitMissingPersonAction(values: MissingPersonFormValues,
   }
 
   try {
-    const imageBuffer = Buffer.from(image.data, 'base64');
+    // const imageBuffer = Buffer.from(image.data, 'base64');
     
-    // Upload image to Firebase Storage
-    const storageRef = ref(storage, `missing-persons/${Date.now()}-${image.name}`);
-    const uploadResult = await uploadBytes(storageRef, imageBuffer);
-    const imageUrl = await getDownloadURL(uploadResult.ref);
+    // // Upload image to Firebase Storage
+    // const storageRef = ref(storage, `missing-persons/${Date.now()}-${image.name}`);
+    // const uploadResult = await uploadBytes(storageRef, imageBuffer);
+    // const imageUrl = await getDownloadURL(uploadResult.ref);
+
+    const imageUrl = "https://picsum.photos/200/300"; // Test image url
 
     // Save report to Firestore
     await addDoc(collection(db, "missingPersons"), {
