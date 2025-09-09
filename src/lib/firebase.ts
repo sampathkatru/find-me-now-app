@@ -9,7 +9,7 @@ import { getStorage } from "firebase/storage";
 const firebaseConfig = {
   "projectId": "findmenow-un3ia",
   "appId": "1:351430922906:web:a4af664a8c05e03e148523",
-  "storageBucket": "findmenow-un3ia.appspot.com",
+  "storageBucket": "demo1-65776.firebasestorage.app",
   "apiKey": "AIzaSyBMhZb0NlYLHPDNYGSPeDNLrFHfRHsGv6Q",
   "authDomain": "findmenow-un3ia.firebaseapp.com",
   "messagingSenderId": "351430922906"
