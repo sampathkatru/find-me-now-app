@@ -73,6 +73,7 @@ export default function MissingPersonForm() {
       lastSeenLocation: "",
       contactInfo: "",
       description: "",
+      image: undefined
     },
   });
 
@@ -89,11 +90,17 @@ export default function MissingPersonForm() {
       }
       const reader = new FileReader();
       reader.onloadend = () => {
-        setImagePreview(reader.result as string);
+        const result = reader.result as string;
+        setImagePreview(result);
+        form.setValue("image", {
+          name: file.name,
+          data: result.split(",")[1]
+        });
       };
       reader.readAsDataURL(file);
     } else {
       setImagePreview(null);
+      form.setValue("image", undefined);
     }
   };
 
@@ -101,8 +108,7 @@ export default function MissingPersonForm() {
     setFormError(null);
     setFormSuccess(null);
 
-    const imageFile = fileInputRef.current?.files?.[0];
-    if (!imageFile) {
+    if (!values.image) {
       toast({
         variant: "destructive",
         title: "Image Required",
@@ -112,19 +118,18 @@ export default function MissingPersonForm() {
     }
     
     startTransition(async () => {
-      const reader = new FileReader();
-      reader.readAsDataURL(imageFile);
-      reader.onload = async () => {
-        const base64Image = (reader.result as string).split(',')[1];
-        const result = await submitMissingPersonAction(values, {data: base64Image, name: imageFile.name});
-        if (result.isError) {
-          setFormError(result.message);
-        } else {
-          setFormSuccess(result.message);
-          form.reset();
-          setImagePreview(null);
-          if(fileInputRef.current) fileInputRef.current.value = "";
-        }
+      const formData = {
+        ...values,
+        dateLastSeen: values.dateLastSeen.toISOString(),
+      };
+      const result = await submitMissingPersonAction(formData);
+      if (result.isError) {
+        setFormError(result.message);
+      } else {
+        setFormSuccess(result.message);
+        form.reset();
+        setImagePreview(null);
+        if(fileInputRef.current) fileInputRef.current.value = "";
       }
     });
   };
@@ -309,58 +314,65 @@ export default function MissingPersonForm() {
                     </FormItem>
                   )}
                 />
-                <FormItem>
-                  <FormLabel>Image of Missing Person</FormLabel>
-                  <FormControl>
-                    <div
-                      className="relative mt-2 flex justify-center rounded-lg border border-dashed border-input px-6 py-10"
-                      onClick={() => fileInputRef.current?.click()}
-                    >
-                      {imagePreview ? (
-                        <>
-                          <Image
-                            src={imagePreview}
-                            alt="Image preview"
-                            width={200}
-                            height={200}
-                            className="h-48 w-48 rounded-md object-cover"
-                          />
-                          <Button
-                            type="button"
-                            variant="destructive"
-                            size="icon"
-                            className="absolute top-2 right-2 h-6 w-6"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setImagePreview(null);
-                              if (fileInputRef.current) fileInputRef.current.value = "";
-                            }}
-                          >
-                            <X className="h-4 w-4" />
-                          </Button>
-                        </>
-                      ) : (
-                        <div className="text-center">
-                          <UploadCloud className="mx-auto h-12 w-12 text-muted-foreground" />
-                          <p className="mt-4 text-sm text-muted-foreground">
-                            <span className="font-semibold text-primary">Click to upload</span> or drag and drop
-                          </p>
-                          <p className="text-xs text-muted-foreground">
-                            PNG, JPG, WEBP up to 4MB
-                          </p>
+                <FormField
+                  control={form.control}
+                  name="image"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Image of Missing Person</FormLabel>
+                      <FormControl>
+                        <div
+                          className="relative mt-2 flex justify-center rounded-lg border border-dashed border-input px-6 py-10"
+                          onClick={() => fileInputRef.current?.click()}
+                        >
+                          {imagePreview ? (
+                            <>
+                              <Image
+                                src={imagePreview}
+                                alt="Image preview"
+                                width={200}
+                                height={200}
+                                className="h-48 w-48 rounded-md object-cover"
+                              />
+                              <Button
+                                type="button"
+                                variant="destructive"
+                                size="icon"
+                                className="absolute top-2 right-2 h-6 w-6"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setImagePreview(null);
+                                  field.onChange(undefined);
+                                  if (fileInputRef.current) fileInputRef.current.value = "";
+                                }}
+                              >
+                                <X className="h-4 w-4" />
+                              </Button>
+                            </>
+                          ) : (
+                            <div className="text-center">
+                              <UploadCloud className="mx-auto h-12 w-12 text-muted-foreground" />
+                              <p className="mt-4 text-sm text-muted-foreground">
+                                <span className="font-semibold text-primary">Click to upload</span> or drag and drop
+                              </p>
+                              <p className="text-xs text-muted-foreground">
+                                PNG, JPG, WEBP up to 4MB
+                              </p>
+                            </div>
+                          )}
                         </div>
-                      )}
-                    </div>
-                  </FormControl>
-                  <Input
-                    type="file"
-                    ref={fileInputRef}
-                    onChange={handleImageChange}
-                    className="hidden"
-                    accept="image/png, image/jpeg, image/webp"
-                  />
-                  <FormMessage />
-                </FormItem>
+                      </FormControl>
+                      <Input
+                        type="file"
+                        ref={fileInputRef}
+                        onChange={handleImageChange}
+                        className="hidden"
+                        accept="image/png, image/jpeg, image/webp"
+                      />
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
               </div>
             </CardContent>
             <CardFooter className="flex-col items-stretch gap-4">

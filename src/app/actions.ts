@@ -12,10 +12,13 @@ type MissingPersonFormData = Omit<MissingPersonFormValues, 'dateLastSeen'> & {
   dateLastSeen: string;
 };
 
-export async function submitMissingPersonAction(formData: MissingPersonFormData, image: {data: string, name: string}) {
-  // Add the image data to the form data for validation
+export async function submitMissingPersonAction(formData: MissingPersonFormData) {
+  const image = formData.image;
+  // Omit image from formData before validation as it's not in the schema
+  const { image: _, ...restOfData } = formData;
+  
   const dataToValidate = {
-    ...formData,
+    ...restOfData,
     dateLastSeen: new Date(formData.dateLastSeen), // Convert date string to Date object
   };
 
@@ -27,6 +30,13 @@ export async function submitMissingPersonAction(formData: MissingPersonFormData,
       message: "Validation failed. Please check the form fields.",
       isError: true,
     };
+  }
+  
+  if (!image || !image.data || !image.name) {
+    return {
+      message: "Image is missing or invalid.",
+      isError: true,
+    }
   }
 
   try {
