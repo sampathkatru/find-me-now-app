@@ -5,8 +5,8 @@ import { getReportingGuidance } from "@/ai/flows/community-reporting-guidance";
 import { missingPersonSchema } from "@/lib/types";
 import { z } from "zod";
 import { db, storage } from "@/lib/firebase";
-import { addDoc, collection } from "firebase/firestore";
-import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
+import { ref as dbRef, push } from "firebase/database";
+import { ref as storageRef, uploadBytes, getDownloadURL } from "firebase/storage";
 
 export async function submitMissingPersonAction(formData: FormData) {
   const rawData = Object.fromEntries(formData.entries());
@@ -27,20 +27,20 @@ export async function submitMissingPersonAction(formData: FormData) {
     let imageUrl = "";
     if (image instanceof File && image.size > 0) {
       const imageBuffer = Buffer.from(await image.arrayBuffer());
-      const storageRef = ref(storage, `missing-persons/${Date.now()}-${image.name}`);
-      const uploadResult = await uploadBytes(storageRef, imageBuffer, { contentType: image.type });
+      const imageStorageRef = storageRef(storage, `missing-persons/${Date.now()}-${image.name}`);
+      const uploadResult = await uploadBytes(imageStorageRef, imageBuffer, { contentType: image.type });
       imageUrl = await getDownloadURL(uploadResult.ref);
     }
 
     const dataToSave = {
       ...reportData,
       age: Number(reportData.age),
-      dateLastSeen: new Date(reportData.dateLastSeen),
+      dateLastSeen: new Date(reportData.dateLastSeen).toISOString(),
       imageUrl: imageUrl,
-      createdAt: new Date(),
+      createdAt: new Date().toISOString(),
     };
 
-    await addDoc(collection(db, "missingPersons"), dataToSave);
+    await push(dbRef(db, "missingPersons"), dataToSave);
 
     return {
       message: "Report submitted successfully!",
@@ -68,15 +68,15 @@ export async function testSubmitDummyDataAction() {
     age: 30,
     gender: "Female",
     lastSeenLocation: "Test Park, Main Street",
-    dateLastSeen: new Date(),
+    dateLastSeen: new Date().toISOString(),
     contactInfo: "555-123-4567",
     description: "This is a test report submitted automatically to verify functionality. She was last seen wearing a blue jacket and jeans.",
     imageUrl: '', // No image for this test
-    createdAt: new Date(),
+    createdAt: new Date().toISOString(),
   };
 
   try {
-    await addDoc(collection(db, "missingPersons"), dummyData);
+    await push(dbRef(db, "missingPersons"), dummyData);
      return {
       message: "Report submitted successfully!",
       isError: false,

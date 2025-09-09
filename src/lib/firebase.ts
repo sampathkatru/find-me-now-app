@@ -1,6 +1,6 @@
 // Import the functions you need from the SDKs you need
 import { initializeApp, getApps, getApp } from "firebase/app";
-import { getFirestore } from "firebase/firestore";
+import { getDatabase } from "firebase/database";
 import { getStorage } from "firebase/storage";
 // TODO: Add SDKs for Firebase products that you want to use
 // https://firebase.google.com/docs/web/setup#available-libraries
@@ -12,12 +12,13 @@ const firebaseConfig = {
   "storageBucket": "demo1-65776.firebasestorage.app",
   "apiKey": "AIzaSyBMhZb0NlYLHPDNYGSPeDNLrFHfRHsGv6Q",
   "authDomain": "findmenow-un3ia.firebaseapp.com",
-  "messagingSenderId": "351430922906"
+  "messagingSenderId": "351430922906",
+  "databaseURL": "https://demo1-65776-default-rtdb.firebaseio.com/"
 };
 
 // Initialize Firebase
 const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
-const db = getFirestore(app);
+const db = getDatabase(app);
 const storage = getStorage(app);
 
 export { app, db, storage };
