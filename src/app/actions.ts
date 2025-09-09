@@ -8,23 +8,25 @@ import { db, storage } from "@/lib/firebase";
 import { addDoc, collection } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 
-export async function submitMissingPersonAction(formData: FormData) {
+export async function submitMissingPersonAction(data: { [key: string]: any }) {
   const rawData = {
-    name: formData.get("name"),
-    age: formData.get("age"),
-    gender: formData.get("gender"),
-    lastSeenLocation: formData.get("lastSeenLocation"),
-    dateLastSeen: formData.get("dateLastSeen"),
-    contactInfo: formData.get("contactInfo"),
-    description: formData.get("description"),
-    image: formData.get("image"),
+    name: data.name,
+    age: data.age,
+    gender: data.gender,
+    lastSeenLocation: data.lastSeenLocation,
+    dateLastSeen: data.dateLastSeen,
+    contactInfo: data.contactInfo,
+    description: data.description,
+    image: data.image,
   };
 
-  const validatedFields = missingPersonSchema.safeParse({
+  const parsedData = {
     ...rawData,
     age: rawData.age ? Number(rawData.age) : undefined,
-    dateLastSeen: rawData.dateLastSeen ? new Date(rawData.dateLastSeen as string) : undefined,
-  });
+    dateLastSeen: rawData.dateLastSeen ? new Date(rawData.dateLastSeen) : undefined,
+  };
+
+  const validatedFields = missingPersonSchema.safeParse(parsedData);
 
   if (!validatedFields.success) {
     console.error("Validation failed:", validatedFields.error.flatten().fieldErrors);

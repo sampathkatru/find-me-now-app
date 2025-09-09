@@ -108,19 +108,8 @@ export default function MissingPersonForm() {
     setFormError(null);
     setFormSuccess(null);
 
-    const formData = new FormData();
-    Object.entries(values).forEach(([key, value]) => {
-      if (value) {
-        if (key === 'dateLastSeen' && value instanceof Date) {
-          formData.append(key, value.toISOString());
-        } else {
-          formData.append(key, value);
-        }
-      }
-    });
-
     startTransition(async () => {
-      const result = await submitMissingPersonAction(formData);
+      const result = await submitMissingPersonAction(values);
 
       if (result.isError) {
         setFormError(result.message);
@@ -465,5 +454,3 @@ export default function MissingPersonForm() {
     </Form>
   );
 }
-
-    
