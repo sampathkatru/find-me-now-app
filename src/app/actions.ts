@@ -8,17 +8,17 @@ import { addDoc, collection } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 
 // Define the type for the form data coming from the client
-type MissingPersonFormData = Omit<MissingPersonFormValues, 'dateLastSeen'> & {
+type MissingPersonFormData = Omit<MissingPersonFormValues, 'dateLastSeen' | 'image'> & {
   dateLastSeen: string;
+  image: {
+    name: string;
+    data: string; // base64 encoded string
+  } | undefined;
 };
 
 export async function submitMissingPersonAction(formData: MissingPersonFormData) {
-  const image = formData.image;
-  // Omit image from formData before validation as it's not in the schema
-  const { image: _, ...restOfData } = formData;
-  
   const dataToValidate = {
-    ...restOfData,
+    ...formData,
     dateLastSeen: new Date(formData.dateLastSeen), // Convert date string to Date object
   };
 
@@ -32,6 +32,8 @@ export async function submitMissingPersonAction(formData: MissingPersonFormData)
     };
   }
   
+  const { image } = validatedFields.data;
+
   if (!image || !image.data || !image.name) {
     return {
       message: "Image is missing or invalid.",
@@ -44,12 +46,14 @@ export async function submitMissingPersonAction(formData: MissingPersonFormData)
     
     // Upload image to Firebase Storage
     const storageRef = ref(storage, `missing-persons/${Date.now()}-${image.name}`);
-    const uploadResult = await uploadBytes(storageRef, imageBuffer);
+    const uploadResult = await uploadBytes(storageRef, imageBuffer, { contentType: 'image/jpeg' });
     const imageUrl = await getDownloadURL(uploadResult.ref);
+
+    const { image: _, ...dataToSave } = validatedFields.data;
 
     // Save report to Firestore
     await addDoc(collection(db, "missingPersons"), {
-      ...validatedFields.data,
+      ...dataToSave,
       imageUrl,
       createdAt: new Date(),
     });
@@ -62,12 +66,47 @@ export async function submitMissingPersonAction(formData: MissingPersonFormData)
     };
   } catch (error) {
     console.error("Error submitting report: ", error);
+    if (error instanceof Error) {
+      return {
+        message: `An error occurred while submitting the report: ${error.message}`,
+        isError: true,
+      };
+    }
     return {
       message: "An error occurred while submitting the report.",
       isError: true,
     };
   }
 }
+
+export async function testSubmitDummyDataAction() {
+  console.log("Attempting to submit dummy data...");
+  const dummyData: MissingPersonFormData = {
+    name: "Jane Doe (Test)",
+    age: 30,
+    gender: "Female",
+    lastSeenLocation: "Test Park, Main Street",
+    dateLastSeen: new Date().toISOString(),
+    contactInfo: "555-123-4567",
+    description: "This is a test report submitted automatically to verify functionality. She was last seen wearing a blue jacket and jeans.",
+    image: {
+      name: "test-image.jpg",
+      // A 1x1 red pixel in base64
+      data: "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/wcAAwAB/epv2AAAAABJRU5ErkJggg==",
+    },
+  };
+
+  const result = await submitMissingPersonAction(dummyData);
+
+  if (result.isError) {
+    console.error("Dummy data submission failed:", result.message);
+  } else {
+    console.log("Dummy data submission successful!");
+  }
+
+  return result;
+}
+
 
 const aiGuidanceSchema = z.object({
   details: z.string(),

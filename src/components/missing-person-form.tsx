@@ -49,9 +49,15 @@ import { Calendar } from "@/components/ui/calendar";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
-import { generateGuidanceAction, submitMissingPersonAction } from "@/app/actions";
+import { generateGuidanceAction, submitMissingPersonAction, testSubmitDummyDataAction } from "@/app/actions";
 import { useToast } from "@/hooks/use-toast";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+
+type ImageFile = {
+  name: string;
+  data: string; // base64
+};
+
 
 export default function MissingPersonForm() {
   const { toast } = useToast();
@@ -63,14 +69,16 @@ export default function MissingPersonForm() {
 
   const [guidance, setGuidance] = useState("");
   const [isLoadingGuidance, setIsLoadingGuidance] = useState(false);
+  const [isTesting, setIsTesting] = useState(false);
 
   const form = useForm<MissingPersonFormValues>({
     resolver: zodResolver(missingPersonSchema),
     defaultValues: {
       name: "",
-      age: 0,
+      age: undefined,
       gender: undefined,
       lastSeenLocation: "",
+      dateLastSeen: undefined,
       contactInfo: "",
       description: "",
       image: undefined
@@ -94,7 +102,7 @@ export default function MissingPersonForm() {
         setImagePreview(result);
         form.setValue("image", {
           name: file.name,
-          data: result.split(",")[1]
+          data: result.split(",")[1] // Send only base64 data
         });
       };
       reader.readAsDataURL(file);
@@ -108,15 +116,6 @@ export default function MissingPersonForm() {
     setFormError(null);
     setFormSuccess(null);
 
-    if (!values.image) {
-      toast({
-        variant: "destructive",
-        title: "Image Required",
-        description: "Please upload an image of the missing person.",
-      });
-      return;
-    }
-    
     startTransition(async () => {
       const formData = {
         ...values,
@@ -125,8 +124,17 @@ export default function MissingPersonForm() {
       const result = await submitMissingPersonAction(formData);
       if (result.isError) {
         setFormError(result.message);
+        toast({
+          variant: "destructive",
+          title: "Submission Error",
+          description: result.message,
+        });
       } else {
         setFormSuccess(result.message);
+        toast({
+          title: "Success!",
+          description: result.message,
+        });
         form.reset();
         setImagePreview(null);
         if(fileInputRef.current) fileInputRef.current.value = "";
@@ -148,6 +156,28 @@ export default function MissingPersonForm() {
       setGuidance(result.guidance);
     }
     setIsLoadingGuidance(false);
+  };
+  
+  const handleTestSubmit = async () => {
+    setIsTesting(true);
+    setFormError(null);
+    setFormSuccess(null);
+    const result = await testSubmitDummyDataAction();
+    if (result.isError) {
+      setFormError(`Test failed: ${result.message}`);
+      toast({
+        variant: "destructive",
+        title: "Test Submission Failed",
+        description: result.message,
+      });
+    } else {
+      setFormSuccess(`Test report for 'Jane Doe (Test)' submitted successfully!`);
+      toast({
+        title: "Test Successful!",
+        description: "Dummy data was submitted successfully.",
+      });
+    }
+    setIsTesting(false);
   };
 
   return (
@@ -183,7 +213,7 @@ export default function MissingPersonForm() {
                     <FormItem>
                       <FormLabel>Age</FormLabel>
                       <FormControl>
-                        <Input type="number" placeholder="35" {...field} onChange={e => field.onChange(parseInt(e.target.value, 10) || 0)} />
+                        <Input type="number" placeholder="35" {...field} onChange={e => field.onChange(e.target.value === '' ? undefined : parseInt(e.target.value, 10))} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -322,7 +352,7 @@ export default function MissingPersonForm() {
                       <FormLabel>Image of Missing Person</FormLabel>
                       <FormControl>
                         <div
-                          className="relative mt-2 flex justify-center rounded-lg border border-dashed border-input px-6 py-10"
+                          className="relative mt-2 flex justify-center rounded-lg border border-dashed border-input px-6 py-10 cursor-pointer"
                           onClick={() => fileInputRef.current?.click()}
                         >
                           {imagePreview ? (
@@ -342,7 +372,7 @@ export default function MissingPersonForm() {
                                 onClick={(e) => {
                                   e.stopPropagation();
                                   setImagePreview(null);
-                                  field.onChange(undefined);
+                                  form.setValue("image", undefined);
                                   if (fileInputRef.current) fileInputRef.current.value = "";
                                 }}
                               >
@@ -378,9 +408,13 @@ export default function MissingPersonForm() {
             <CardFooter className="flex-col items-stretch gap-4">
               {formSuccess && <Alert variant="default" className="border-green-500 text-green-700"><AlertTitle>Success!</AlertTitle><AlertDescription>{formSuccess}</AlertDescription></Alert>}
               {formError && <Alert variant="destructive"><AlertTitle>Error</AlertTitle><AlertDescription>{formError}</AlertDescription></Alert>}
-              <Button type="submit" disabled={isPending} className="w-full bg-accent hover:bg-accent/90">
+              <Button type="submit" disabled={isPending || isTesting} className="w-full bg-accent hover:bg-accent/90">
                 {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 Submit Report
+              </Button>
+              <Button type="button" variant="outline" onClick={handleTestSubmit} disabled={isPending || isTesting}>
+                {isTesting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                Test Submit with Dummy Data
               </Button>
             </CardFooter>
           </Card>
