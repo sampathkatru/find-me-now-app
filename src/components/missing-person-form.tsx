@@ -49,7 +49,7 @@ import { Calendar } from "@/components/ui/calendar";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
-import { generateGuidanceAction, submitMissingPerson } from "@/app/actions";
+import { generateGuidanceAction, submitMissingPersonAction } from "@/app/actions";
 import { useToast } from "@/hooks/use-toast";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
@@ -68,8 +68,8 @@ export default function MissingPersonForm() {
     resolver: zodResolver(missingPersonSchema),
     defaultValues: {
       name: "",
-      age: "" as unknown as number,
-      gender: "" as "Male" | "Female" | "Other",
+      age: 0,
+      gender: undefined,
       lastSeenLocation: "",
       contactInfo: "",
       description: "",
@@ -101,19 +101,8 @@ export default function MissingPersonForm() {
     setFormError(null);
     setFormSuccess(null);
 
-    const formData = new FormData();
-    
-    Object.entries(values).forEach(([key, value]) => {
-      if (value instanceof Date) {
-        formData.append(key, value.toISOString());
-      } else if (value) {
-        formData.append(key, String(value));
-      }
-    });
-
-    if (fileInputRef.current?.files?.[0]) {
-      formData.append("image", fileInputRef.current.files[0]);
-    } else {
+    const imageFile = fileInputRef.current?.files?.[0];
+    if (!imageFile) {
       toast({
         variant: "destructive",
         title: "Image Required",
@@ -123,14 +112,19 @@ export default function MissingPersonForm() {
     }
     
     startTransition(async () => {
-      const result = await submitMissingPerson(null, formData);
-      if (result.isError) {
-        setFormError(result.message);
-      } else {
-        setFormSuccess(result.message);
-        form.reset();
-        setImagePreview(null);
-        if(fileInputRef.current) fileInputRef.current.value = "";
+      const reader = new FileReader();
+      reader.readAsDataURL(imageFile);
+      reader.onload = async () => {
+        const base64Image = (reader.result as string).split(',')[1];
+        const result = await submitMissingPersonAction(values, {data: base64Image, name: imageFile.name});
+        if (result.isError) {
+          setFormError(result.message);
+        } else {
+          setFormSuccess(result.message);
+          form.reset();
+          setImagePreview(null);
+          if(fileInputRef.current) fileInputRef.current.value = "";
+        }
       }
     });
   };
