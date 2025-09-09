@@ -68,8 +68,8 @@ export default function MissingPersonForm() {
     resolver: zodResolver(missingPersonSchema),
     defaultValues: {
       name: "",
-      age: undefined,
-      gender: undefined,
+      age: "" as unknown as number,
+      gender: "" as "Male" | "Female" | "Other",
       lastSeenLocation: "",
       contactInfo: "",
       description: "",
@@ -200,7 +200,7 @@ export default function MissingPersonForm() {
                       <FormLabel>Gender</FormLabel>
                       <Select
                         onValueChange={field.onChange}
-                        defaultValue={field.value}
+                        value={field.value}
                       >
                         <FormControl>
                           <SelectTrigger>
