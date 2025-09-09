@@ -33,7 +33,7 @@ export async function submitMissingPersonAction(formData: MissingPersonFormData)
     };
   }
   
-  const { image, ...dataToSaveWithoutImage } = validatedFields.data;
+  const { image, ...reportData } = validatedFields.data;
 
   try {
     let imageUrl = "";
@@ -46,8 +46,8 @@ export async function submitMissingPersonAction(formData: MissingPersonFormData)
 
     // Save report to Firestore
     await addDoc(collection(db, "missingPersons"), {
-      ...dataToSaveWithoutImage,
-      imageUrl,
+      ...reportData,
+      imageUrl: imageUrl, // Always include imageUrl, even if it's an empty string
       createdAt: new Date(),
     });
 
