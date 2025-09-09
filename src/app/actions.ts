@@ -1,29 +1,30 @@
+
 "use server";
 
 import { getReportingGuidance } from "@/ai/flows/community-reporting-guidance";
-import { missingPersonSchema, type MissingPersonFormValues } from "@/lib/types";
+import { missingPersonSchema } from "@/lib/types";
 import { z } from "zod";
 import { db, storage } from "@/lib/firebase";
 import { addDoc, collection } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 
-// Define the type for the form data coming from the client
-type MissingPersonFormData = Omit<MissingPersonFormValues, 'dateLastSeen' | 'image'> & {
-  dateLastSeen: string;
-  image: {
-    name: string;
-    data: string; // base64 encoded string
-  } | undefined;
-};
-
-export async function submitMissingPersonAction(formData: MissingPersonFormData) {
-  const dataToValidate = {
-    ...formData,
-    dateLastSeen: new Date(formData.dateLastSeen), // Convert date string to Date object
-    age: Number(formData.age), // Explicitly convert age to number
+export async function submitMissingPersonAction(formData: FormData) {
+  const rawData = {
+    name: formData.get("name"),
+    age: formData.get("age"),
+    gender: formData.get("gender"),
+    lastSeenLocation: formData.get("lastSeenLocation"),
+    dateLastSeen: formData.get("dateLastSeen"),
+    contactInfo: formData.get("contactInfo"),
+    description: formData.get("description"),
+    image: formData.get("image"),
   };
 
-  const validatedFields = missingPersonSchema.safeParse(dataToValidate);
+  const validatedFields = missingPersonSchema.safeParse({
+    ...rawData,
+    age: rawData.age ? Number(rawData.age) : undefined,
+    dateLastSeen: rawData.dateLastSeen ? new Date(rawData.dateLastSeen as string) : undefined,
+  });
 
   if (!validatedFields.success) {
     console.error("Validation failed:", validatedFields.error.flatten().fieldErrors);
@@ -37,27 +38,19 @@ export async function submitMissingPersonAction(formData: MissingPersonFormData)
 
   try {
     let imageUrl = "";
-    if (image?.data && image.name) {
-      const imageBuffer = Buffer.from(image.data, 'base64');
+    if (image instanceof File && image.size > 0) {
+      const imageBuffer = Buffer.from(await image.arrayBuffer());
       const storageRef = ref(storage, `missing-persons/${Date.now()}-${image.name}`);
-      const uploadResult = await uploadBytes(storageRef, imageBuffer, { contentType: 'image/jpeg' });
+      const uploadResult = await uploadBytes(storageRef, imageBuffer, { contentType: image.type });
       imageUrl = await getDownloadURL(uploadResult.ref);
     }
 
-    // Explicitly create a clean object for Firestore
     const dataToSave = {
-      name: reportData.name,
-      age: reportData.age,
-      gender: reportData.gender,
-      lastSeenLocation: reportData.lastSeenLocation,
-      dateLastSeen: reportData.dateLastSeen,
-      contactInfo: reportData.contactInfo,
-      description: reportData.description,
-      imageUrl: imageUrl, // Always include imageUrl, even if it's an empty string
+      ...reportData,
+      imageUrl: imageUrl,
       createdAt: new Date(),
     };
 
-    // Save report to Firestore
     await addDoc(collection(db, "missingPersons"), dataToSave);
 
     console.log("Submission successful.");
@@ -83,30 +76,30 @@ export async function submitMissingPersonAction(formData: MissingPersonFormData)
 
 export async function testSubmitDummyDataAction() {
   console.log("Attempting to submit dummy data...");
-  const dummyData: MissingPersonFormData = {
+  const dummyData = {
     name: "Jane Doe (Test)",
     age: 30,
     gender: "Female",
     lastSeenLocation: "Test Park, Main Street",
-    dateLastSeen: new Date().toISOString(),
+    dateLastSeen: new Date(),
     contactInfo: "555-123-4567",
     description: "This is a test report submitted automatically to verify functionality. She was last seen wearing a blue jacket and jeans.",
-    image: {
-      name: "test-image.jpg",
-      // A 1x1 red pixel in base64
-      data: "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/wcAAwAB/epv2AAAAABJRU5ErkJggg==",
-    },
+    image: undefined, // No image for this test
   };
 
-  const result = await submitMissingPersonAction(dummyData);
-
-  if (result.isError) {
-    console.error("Dummy data submission failed:", result.message);
-  } else {
-    console.log("Dummy data submission successful!");
+  try {
+    await addDoc(collection(db, "missingPersons"), { ...dummyData, imageUrl: '', createdAt: new Date() });
+     return {
+      message: "Report submitted successfully!",
+      isError: false,
+    };
+  } catch (error) {
+     console.error("Dummy data submission failed:", error);
+     return {
+        message: "An error occurred while submitting the report.",
+        isError: true,
+    };
   }
-
-  return result;
 }
 
 

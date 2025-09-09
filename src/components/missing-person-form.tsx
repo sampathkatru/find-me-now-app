@@ -1,3 +1,4 @@
+
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -53,11 +54,6 @@ import { generateGuidanceAction, submitMissingPersonAction, testSubmitDummyDataA
 import { useToast } from "@/hooks/use-toast";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
-type ImageFile = {
-  name: string;
-  data: string; // base64
-};
-
 
 export default function MissingPersonForm() {
   const { toast } = useToast();
@@ -75,7 +71,7 @@ export default function MissingPersonForm() {
     resolver: zodResolver(missingPersonSchema),
     defaultValues: {
       name: "",
-      age: "" as unknown as number, // Initialize with empty string
+      age: undefined,
       gender: undefined,
       lastSeenLocation: "",
       dateLastSeen: undefined,
@@ -96,14 +92,10 @@ export default function MissingPersonForm() {
         });
         return;
       }
+      form.setValue("image", file);
       const reader = new FileReader();
       reader.onloadend = () => {
-        const result = reader.result as string;
-        setImagePreview(result);
-        form.setValue("image", {
-          name: file.name,
-          data: result.split(",")[1] // Send only base64 data
-        });
+        setImagePreview(reader.result as string);
       };
       reader.readAsDataURL(file);
     } else {
@@ -111,19 +103,23 @@ export default function MissingPersonForm() {
       form.setValue("image", undefined);
     }
   };
-
+  
   const onSubmit = (values: MissingPersonFormValues) => {
     setFormError(null);
     setFormSuccess(null);
 
-    startTransition(async () => {
-      const formData = {
-        ...values,
-        dateLastSeen: values.dateLastSeen ? values.dateLastSeen.toISOString() : new Date().toISOString(),
-        age: Number(values.age),
-        image: values.image ? { name: values.image.name, data: values.image.data } : undefined,
-      };
+    const formData = new FormData();
+    Object.entries(values).forEach(([key, value]) => {
+      if (value) {
+        if (key === 'dateLastSeen' && value instanceof Date) {
+          formData.append(key, value.toISOString());
+        } else {
+          formData.append(key, value);
+        }
+      }
+    });
 
+    startTransition(async () => {
       const result = await submitMissingPersonAction(formData);
 
       if (result.isError) {
@@ -217,7 +213,7 @@ export default function MissingPersonForm() {
                     <FormItem>
                       <FormLabel>Age</FormLabel>
                       <FormControl>
-                        <Input type="number" placeholder="35" {...field} />
+                        <Input type="number" placeholder="35" {...field} onChange={e => field.onChange(e.target.value === '' ? undefined : +e.target.value)} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
