@@ -114,11 +114,11 @@ export default function MissingPersonForm() {
         if (value !== undefined && value !== null) {
           if (key === 'image' && value instanceof File) {
             formData.append(key, value);
-          } else if (typeof value === 'number' || typeof value === 'boolean') {
-            formData.append(key, value.toString());
+          } else if (key === 'dateLastSeen' && value instanceof Date) {
+            formData.append(key, value.toISOString());
           }
-          else if (typeof value === 'string') {
-            formData.append(key, value);
+           else if (typeof value === 'number' || typeof value === 'boolean' || typeof value === 'string') {
+            formData.append(key, value.toString());
           }
         }
       });
