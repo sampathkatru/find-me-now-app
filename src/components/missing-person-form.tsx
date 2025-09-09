@@ -71,7 +71,7 @@ export default function MissingPersonForm() {
     resolver: zodResolver(missingPersonSchema),
     defaultValues: {
       name: "",
-      age: undefined,
+      age: 0,
       gender: undefined,
       lastSeenLocation: "",
       dateLastSeen: undefined,
@@ -213,7 +213,7 @@ export default function MissingPersonForm() {
                     <FormItem>
                       <FormLabel>Age</FormLabel>
                       <FormControl>
-                        <Input type="number" placeholder="35" {...field} onChange={e => field.onChange(e.target.value === '' ? undefined : +e.target.value)} />
+                        <Input type="number" placeholder="35" {...field} onChange={e => field.onChange(+e.target.value)} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -465,3 +465,5 @@ export default function MissingPersonForm() {
     </Form>
   );
 }
+
+    
