@@ -20,6 +20,7 @@ export async function submitMissingPersonAction(formData: MissingPersonFormData)
   const dataToValidate = {
     ...formData,
     dateLastSeen: new Date(formData.dateLastSeen), // Convert date string to Date object
+    age: Number(formData.age), // Explicitly convert age to number
   };
 
   const validatedFields = missingPersonSchema.safeParse(dataToValidate);
@@ -32,28 +33,20 @@ export async function submitMissingPersonAction(formData: MissingPersonFormData)
     };
   }
   
-  const { image } = validatedFields.data;
-
-  if (!image || !image.data || !image.name) {
-    return {
-      message: "Image is missing or invalid.",
-      isError: true,
-    }
-  }
+  const { image, ...dataToSaveWithoutImage } = validatedFields.data;
 
   try {
-    const imageBuffer = Buffer.from(image.data, 'base64');
-    
-    // Upload image to Firebase Storage
-    const storageRef = ref(storage, `missing-persons/${Date.now()}-${image.name}`);
-    const uploadResult = await uploadBytes(storageRef, imageBuffer, { contentType: 'image/jpeg' });
-    const imageUrl = await getDownloadURL(uploadResult.ref);
-
-    const { image: _, ...dataToSave } = validatedFields.data;
+    let imageUrl = "";
+    if (image?.data && image.name) {
+      const imageBuffer = Buffer.from(image.data, 'base64');
+      const storageRef = ref(storage, `missing-persons/${Date.now()}-${image.name}`);
+      const uploadResult = await uploadBytes(storageRef, imageBuffer, { contentType: 'image/jpeg' });
+      imageUrl = await getDownloadURL(uploadResult.ref);
+    }
 
     // Save report to Firestore
     await addDoc(collection(db, "missingPersons"), {
-      ...dataToSave,
+      ...dataToSaveWithoutImage,
       imageUrl,
       createdAt: new Date(),
     });
