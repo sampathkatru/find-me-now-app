@@ -44,12 +44,21 @@ export async function submitMissingPersonAction(formData: MissingPersonFormData)
       imageUrl = await getDownloadURL(uploadResult.ref);
     }
 
-    // Save report to Firestore
-    await addDoc(collection(db, "missingPersons"), {
-      ...reportData,
+    // Explicitly create a clean object for Firestore
+    const dataToSave = {
+      name: reportData.name,
+      age: reportData.age,
+      gender: reportData.gender,
+      lastSeenLocation: reportData.lastSeenLocation,
+      dateLastSeen: reportData.dateLastSeen,
+      contactInfo: reportData.contactInfo,
+      description: reportData.description,
       imageUrl: imageUrl, // Always include imageUrl, even if it's an empty string
       createdAt: new Date(),
-    });
+    };
+
+    // Save report to Firestore
+    await addDoc(collection(db, "missingPersons"), dataToSave);
 
     console.log("Submission successful.");
 
