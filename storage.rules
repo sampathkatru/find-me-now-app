@@ -3,9 +3,8 @@ rules_version = '2';
 service firebase.storage {
   match /b/{bucket}/o {
     match /{allPaths=**} {
-      // Allow public read and write access.
-      // NOTE: For a production app, you would want to implement more restrictive rules.
-      allow read, write;
+      // Allow read and write access for all paths
+      allow read, write: if true;
     }
   }
 }
