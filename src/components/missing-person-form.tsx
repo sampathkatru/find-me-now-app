@@ -75,7 +75,7 @@ export default function MissingPersonForm() {
     resolver: zodResolver(missingPersonSchema),
     defaultValues: {
       name: "",
-      age: undefined,
+      age: "" as unknown as number, // Initialize with empty string
       gender: undefined,
       lastSeenLocation: "",
       dateLastSeen: undefined,
@@ -119,9 +119,13 @@ export default function MissingPersonForm() {
     startTransition(async () => {
       const formData = {
         ...values,
-        dateLastSeen: values.dateLastSeen.toISOString(),
+        dateLastSeen: values.dateLastSeen ? values.dateLastSeen.toISOString() : new Date().toISOString(),
+        age: Number(values.age),
+        image: values.image ? { name: values.image.name, data: values.image.data } : undefined,
       };
+
       const result = await submitMissingPersonAction(formData);
+
       if (result.isError) {
         setFormError(result.message);
         toast({
@@ -213,7 +217,7 @@ export default function MissingPersonForm() {
                     <FormItem>
                       <FormLabel>Age</FormLabel>
                       <FormControl>
-                        <Input type="number" placeholder="35" {...field} onChange={e => field.onChange(e.target.value === '' ? undefined : parseInt(e.target.value, 10))} />
+                        <Input type="number" placeholder="35" {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
