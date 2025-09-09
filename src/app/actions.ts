@@ -3,6 +3,9 @@
 import { getReportingGuidance } from "@/ai/flows/community-reporting-guidance";
 import { missingPersonSchema } from "@/lib/types";
 import { z } from "zod";
+import { db, storage } from "@/lib/firebase";
+import { addDoc, collection } from "firebase/firestore";
+import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 
 export async function submitMissingPerson(prevState: any, formData: FormData) {
   const values = Object.fromEntries(formData.entries());
@@ -27,27 +30,39 @@ export async function submitMissingPerson(prevState: any, formData: FormData) {
   });
 
   if (!validatedFields.success) {
+    console.log(validatedFields.error.flatten().fieldErrors);
     return {
       message: "Validation failed. Please check the fields.",
       isError: true,
     };
   }
 
-  // Here you would upload the image to Firebase Storage
-  // and then save the data along with the image URL to Firestore.
-  console.log("Submitting to Firebase...");
-  console.log("Validated Data:", validatedFields.data);
-  console.log("Image:", image.name, image.type, image.size);
+  try {
+    // Upload image to Firebase Storage
+    const storageRef = ref(storage, `missing-persons/${Date.now()}-${image.name}`);
+    const uploadResult = await uploadBytes(storageRef, image);
+    const imageUrl = await getDownloadURL(uploadResult.ref);
 
-  // Simulate network delay
-  await new Promise((resolve) => setTimeout(resolve, 1500));
-  
-  console.log("Submission successful.");
+    // Save report to Firestore
+    await addDoc(collection(db, "missingPersons"), {
+      ...validatedFields.data,
+      imageUrl,
+      createdAt: new Date(),
+    });
 
-  return {
-    message: "Report submitted successfully!",
-    isError: false,
-  };
+    console.log("Submission successful.");
+
+    return {
+      message: "Report submitted successfully!",
+      isError: false,
+    };
+  } catch (error) {
+    console.error("Error submitting report: ", error);
+    return {
+      message: "An error occurred while submitting the report.",
+      isError: true,
+    };
+  }
 }
 
 const aiGuidanceSchema = z.object({
