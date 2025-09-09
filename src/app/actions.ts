@@ -18,7 +18,6 @@ export async function submitMissingPerson(prevState: any, formData: FormData) {
     };
   }
 
-  // Manually parse date since it comes as a string from FormData
   const validatedFields = missingPersonSchema.safeParse({
     name: values.name,
     age: values.age,
@@ -30,9 +29,9 @@ export async function submitMissingPerson(prevState: any, formData: FormData) {
   });
 
   if (!validatedFields.success) {
-    console.log(validatedFields.error.flatten().fieldErrors);
+    console.error("Validation failed:", validatedFields.error.flatten().fieldErrors);
     return {
-      message: "Validation failed. Please check the fields.",
+      message: "Validation failed. Please check the form fields.",
       isError: true,
     };
   }
