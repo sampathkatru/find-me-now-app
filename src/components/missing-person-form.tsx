@@ -109,7 +109,21 @@ export default function MissingPersonForm() {
     setFormSuccess(null);
 
     startTransition(async () => {
-      const result = await submitMissingPersonAction(values);
+      const formData = new FormData();
+      Object.entries(values).forEach(([key, value]) => {
+        if (value !== undefined && value !== null) {
+          if (key === 'image' && value instanceof File) {
+            formData.append(key, value);
+          } else if (typeof value === 'number' || typeof value === 'boolean') {
+            formData.append(key, value.toString());
+          }
+          else if (typeof value === 'string') {
+            formData.append(key, value);
+          }
+        }
+      });
+      
+      const result = await submitMissingPersonAction(formData);
 
       if (result.isError) {
         setFormError(result.message);
@@ -125,6 +139,7 @@ export default function MissingPersonForm() {
           description: result.message,
         });
         form.reset();
+        setGuidance("");
         setImagePreview(null);
         if(fileInputRef.current) fileInputRef.current.value = "";
       }
@@ -252,7 +267,7 @@ export default function MissingPersonForm() {
                               )}
                             >
                               {field.value ? (
-                                format(field.value, "PPP")
+                                format(new Date(field.value), "PPP")
                               ) : (
                                 <span>Pick a date</span>
                               )}
@@ -263,8 +278,8 @@ export default function MissingPersonForm() {
                         <PopoverContent className="w-auto p-0" align="start">
                           <Calendar
                             mode="single"
-                            selected={field.value}
-                            onSelect={field.onChange}
+                            selected={field.value ? new Date(field.value): undefined}
+                            onSelect={(date) => field.onChange(date?.toISOString())}
                             disabled={(date) =>
                               date > new Date() || date < new Date("1900-01-01")
                             }

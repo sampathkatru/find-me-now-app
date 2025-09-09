@@ -8,25 +8,10 @@ import { db, storage } from "@/lib/firebase";
 import { addDoc, collection } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 
-export async function submitMissingPersonAction(data: { [key: string]: any }) {
-  const rawData = {
-    name: data.name,
-    age: data.age,
-    gender: data.gender,
-    lastSeenLocation: data.lastSeenLocation,
-    dateLastSeen: data.dateLastSeen,
-    contactInfo: data.contactInfo,
-    description: data.description,
-    image: data.image,
-  };
-
-  const parsedData = {
-    ...rawData,
-    age: rawData.age ? Number(rawData.age) : undefined,
-    dateLastSeen: rawData.dateLastSeen ? new Date(rawData.dateLastSeen) : undefined,
-  };
-
-  const validatedFields = missingPersonSchema.safeParse(parsedData);
+export async function submitMissingPersonAction(formData: FormData) {
+  const rawData = Object.fromEntries(formData.entries());
+  
+  const validatedFields = missingPersonSchema.safeParse(rawData);
 
   if (!validatedFields.success) {
     console.error("Validation failed:", validatedFields.error.flatten().fieldErrors);
@@ -49,13 +34,13 @@ export async function submitMissingPersonAction(data: { [key: string]: any }) {
 
     const dataToSave = {
       ...reportData,
+      age: Number(reportData.age),
+      dateLastSeen: new Date(reportData.dateLastSeen),
       imageUrl: imageUrl,
       createdAt: new Date(),
     };
 
     await addDoc(collection(db, "missingPersons"), dataToSave);
-
-    console.log("Submission successful.");
 
     return {
       message: "Report submitted successfully!",
@@ -86,11 +71,12 @@ export async function testSubmitDummyDataAction() {
     dateLastSeen: new Date(),
     contactInfo: "555-123-4567",
     description: "This is a test report submitted automatically to verify functionality. She was last seen wearing a blue jacket and jeans.",
-    image: undefined, // No image for this test
+    imageUrl: '', // No image for this test
+    createdAt: new Date(),
   };
 
   try {
-    await addDoc(collection(db, "missingPersons"), { ...dummyData, imageUrl: '', createdAt: new Date() });
+    await addDoc(collection(db, "missingPersons"), dummyData);
      return {
       message: "Report submitted successfully!",
       isError: false,
