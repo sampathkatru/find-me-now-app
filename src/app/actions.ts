@@ -7,8 +7,19 @@ import { db, storage } from "@/lib/firebase";
 import { addDoc, collection } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 
-export async function submitMissingPersonAction(values: MissingPersonFormValues, image: {data: string, name: string}) {
-  const validatedFields = missingPersonSchema.safeParse(values);
+// Define the type for the form data coming from the client
+type MissingPersonFormData = Omit<MissingPersonFormValues, 'dateLastSeen'> & {
+  dateLastSeen: string;
+};
+
+export async function submitMissingPersonAction(formData: MissingPersonFormData, image: {data: string, name: string}) {
+  // Add the image data to the form data for validation
+  const dataToValidate = {
+    ...formData,
+    dateLastSeen: new Date(formData.dateLastSeen), // Convert date string to Date object
+  };
+
+  const validatedFields = missingPersonSchema.safeParse(dataToValidate);
 
   if (!validatedFields.success) {
     console.error("Validation failed:", validatedFields.error.flatten().fieldErrors);
@@ -19,14 +30,12 @@ export async function submitMissingPersonAction(values: MissingPersonFormValues,
   }
 
   try {
-    // const imageBuffer = Buffer.from(image.data, 'base64');
+    const imageBuffer = Buffer.from(image.data, 'base64');
     
-    // // Upload image to Firebase Storage
-    // const storageRef = ref(storage, `missing-persons/${Date.now()}-${image.name}`);
-    // const uploadResult = await uploadBytes(storageRef, imageBuffer);
-    // const imageUrl = await getDownloadURL(uploadResult.ref);
-
-    const imageUrl = "https://picsum.photos/200/300"; // Test image url
+    // Upload image to Firebase Storage
+    const storageRef = ref(storage, `missing-persons/${Date.now()}-${image.name}`);
+    const uploadResult = await uploadBytes(storageRef, imageBuffer);
+    const imageUrl = await getDownloadURL(uploadResult.ref);
 
     // Save report to Firestore
     await addDoc(collection(db, "missingPersons"), {
