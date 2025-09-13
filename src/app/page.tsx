@@ -11,7 +11,7 @@ export default function Home() {
               <SearchIcon className="h-5 w-5 text-primary-foreground" />
             </div>
             <h1 className="text-2xl font-bold tracking-tight font-headline">
-              FindMeNow
+              SafeLink
             </h1>
           </div>
           <p className="hidden text-sm text-muted-foreground md:block">
@@ -24,7 +24,7 @@ export default function Home() {
       </main>
       <footer className="container mx-auto px-4 py-6 md:px-6">
         <p className="text-center text-sm text-muted-foreground">
-          &copy; {new Date().getFullYear()} FindMeNow. All rights reserved.
+          &copy; {new Date().getFullYear()} SafeLink. All rights reserved.
         </p>
       </footer>
     </div>
