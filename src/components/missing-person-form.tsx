@@ -71,7 +71,7 @@ export default function MissingPersonForm() {
     resolver: zodResolver(missingPersonSchema),
     defaultValues: {
       name: "",
-      age: 0,
+      age: ,
       gender: undefined,
       lastSeenLocation: "",
       dateLastSeen: undefined,
@@ -204,7 +204,7 @@ export default function MissingPersonForm() {
                     <FormItem>
                       <FormLabel>Full Name</FormLabel>
                       <FormControl>
-                        <Input placeholder="John Doe" {...field} />
+                        <Input placeholder="Missing person name" {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -301,7 +301,7 @@ export default function MissingPersonForm() {
                     <FormLabel>Last Seen Location</FormLabel>
                     <FormControl>
                       <Input
-                        placeholder="e.g., Central Park, near the fountain"
+                        placeholder="e.g.,College,Bus stand"
                         {...field}
                       />
                     </FormControl>
@@ -337,7 +337,7 @@ export default function MissingPersonForm() {
                       <FormLabel>Contact Information</FormLabel>
                       <FormControl>
                         <Input
-                          placeholder="Local police department phone number"
+                          placeholder="Family Member Contact"
                           {...field}
                         />
                       </FormControl>
